@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Vagabondo",
+    "slug": "vagabondo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#FF5F2E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vagabondo.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Vagabondo needs your location to show nearby events and let you create events at your current spot."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FF5F2E"
+      },
+      "package": "com.vagabondo.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vagabondo needs your location to show nearby events."
+        }
+      ]
+    ]
+  }
+}
