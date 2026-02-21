@@ -1,0 +1,8 @@
+{
+  "name": "Vagabondo App Screens",
+  "id": "vagabondo-app-screens",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
+}
