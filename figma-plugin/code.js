@@ -524,35 +524,45 @@ async function buildDetailScreen(ox) {
 
 // ── Entry point ──────────────────────────────────────────────
 async function run() {
-  // Pre-load fonts
   try {
-    await Promise.all([
-      figma.loadFontAsync({ family: 'Inter', style: 'Regular' }),
-      figma.loadFontAsync({ family: 'Inter', style: 'Bold' }),
-      figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' }),
-    ]);
-    _loaded.add('Inter|Regular');
-    _loaded.add('Inter|Bold');
-    _loaded.add('Inter|Semi Bold');
-  } catch {
-    // Fallback: use Roboto (always available in Figma)
-    await Promise.all([
-      figma.loadFontAsync({ family: 'Roboto', style: 'Regular' }),
-      figma.loadFontAsync({ family: 'Roboto', style: 'Bold' }),
-      figma.loadFontAsync({ family: 'Roboto', style: 'Medium' }),
-    ]);
-    _loaded.add('Roboto|Regular');
-    _loaded.add('Roboto|Bold');
-    _loaded.add('Roboto|Medium');
+    // Pre-load fonts — try Inter first, fall back to Roboto
+    figma.notify('Loading fonts…', { timeout: 3000 });
+    try {
+      await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+      _loaded.add('Inter|Regular');
+      await figma.loadFontAsync({ family: 'Inter', style: 'Bold' });
+      _loaded.add('Inter|Bold');
+      await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
+      _loaded.add('Inter|Semi Bold');
+    } catch (fontErr) {
+      figma.notify('Inter not available, using Roboto…', { timeout: 2000 });
+      await figma.loadFontAsync({ family: 'Roboto', style: 'Regular' });
+      _loaded.add('Roboto|Regular');
+      await figma.loadFontAsync({ family: 'Roboto', style: 'Bold' });
+      _loaded.add('Roboto|Bold');
+      await figma.loadFontAsync({ family: 'Roboto', style: 'Medium' });
+      _loaded.add('Roboto|Medium');
+    }
+
+    figma.notify('Building screen 1/4: Map…', { timeout: 3000 });
+    const s1 = await buildMapScreen(0);
+
+    figma.notify('Building screen 2/4: Events List…', { timeout: 3000 });
+    const s2 = await buildListScreen((SW + GAP) * 1);
+
+    figma.notify('Building screen 3/4: Create Event…', { timeout: 3000 });
+    const s3 = await buildCreateScreen((SW + GAP) * 2);
+
+    figma.notify('Building screen 4/4: Event Detail…', { timeout: 3000 });
+    const s4 = await buildDetailScreen((SW + GAP) * 3);
+
+    figma.viewport.scrollAndZoomIntoView([s1, s2, s3, s4]);
+    figma.notify('✅ Vagabondo – 4 screens generated!', { timeout: 5000 });
+  } catch (err) {
+    // Show the real error as a visible toast so no console needed
+    const msg = (err && err.message) ? err.message : String(err);
+    figma.notify('ERROR: ' + msg, { error: true, timeout: 30000 });
   }
-
-  const s1 = await buildMapScreen(0);
-  const s2 = await buildListScreen((SW + GAP) * 1);
-  const s3 = await buildCreateScreen((SW + GAP) * 2);
-  const s4 = await buildDetailScreen((SW + GAP) * 3);
-
-  figma.viewport.scrollAndZoomIntoView([s1, s2, s3, s4]);
-  figma.notify('✅ Vagabondo – 4 screens generated!', { timeout: 4000 });
   figma.closePlugin();
 }
 
