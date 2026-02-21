@@ -4,11 +4,16 @@
 // Event Detail — using the exact design tokens from src/theme
 // ============================================================
 
-// TOP-LEVEL SYNC NOTIFY — proves the plugin file loaded at all.
-// If you see this toast, the file is being executed correctly.
-// If you do NOT see this toast, re-import the plugin from manifest.json:
-//   Figma menu > Plugins > Development > Import plugin from manifest…
-figma.notify('Vagabondo plugin loaded — building screens…', { timeout: 10000 });
+// Open the UI panel so we can show full log messages (toasts truncate).
+// The panel appears immediately when the plugin runs.
+figma.showUI(__html__, { width: 420, height: 320, title: 'Vagabondo – Screen Generator' });
+
+// Logging helper — sends to UI panel and optionally shows a toast.
+function log(text, level = 'info') {
+  figma.ui.postMessage({ text, level });
+  if (level === 'error') figma.notify(text.slice(0, 120), { error: true, timeout: 20000 });
+  if (level === 'success') figma.notify(text.slice(0, 120), { timeout: 5000 });
+}
 
 // ── Design Tokens ──────────────────────────────────────────
 const C = {
@@ -531,49 +536,56 @@ async function buildDetailScreen(ox) {
 // ── Entry point ──────────────────────────────────────────────
 async function run() {
   try {
-    // Pre-load fonts — try Inter first, fall back to Roboto
-    figma.notify('Loading fonts…', { timeout: 3000 });
+    log('Loading fonts — trying Inter first…');
     try {
       await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
       _loaded.add('Inter|Regular');
+      log('Inter Regular loaded');
       await figma.loadFontAsync({ family: 'Inter', style: 'Bold' });
       _loaded.add('Inter|Bold');
+      log('Inter Bold loaded');
       await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
       _loaded.add('Inter|Semi Bold');
+      log('Inter Semi Bold loaded');
     } catch (fontErr) {
-      figma.notify('Inter not available, using Roboto…', { timeout: 2000 });
+      const fe = (fontErr && fontErr.message) ? fontErr.message : String(fontErr);
+      log('Inter failed (' + fe + ') — falling back to Roboto', 'warn');
       await figma.loadFontAsync({ family: 'Roboto', style: 'Regular' });
       _loaded.add('Roboto|Regular');
       await figma.loadFontAsync({ family: 'Roboto', style: 'Bold' });
       _loaded.add('Roboto|Bold');
       await figma.loadFontAsync({ family: 'Roboto', style: 'Medium' });
       _loaded.add('Roboto|Medium');
+      log('Roboto loaded as fallback');
     }
 
-    figma.notify('Building screen 1/4: Map…', { timeout: 3000 });
+    log('Building screen 1/4: Map…');
     const s1 = await buildMapScreen(0);
+    log('Screen 1 done');
 
-    figma.notify('Building screen 2/4: Events List…', { timeout: 3000 });
+    log('Building screen 2/4: Events List…');
     const s2 = await buildListScreen((SW + GAP) * 1);
+    log('Screen 2 done');
 
-    figma.notify('Building screen 3/4: Create Event…', { timeout: 3000 });
+    log('Building screen 3/4: Create Event…');
     const s3 = await buildCreateScreen((SW + GAP) * 2);
+    log('Screen 3 done');
 
-    figma.notify('Building screen 4/4: Event Detail…', { timeout: 3000 });
+    log('Building screen 4/4: Event Detail…');
     const s4 = await buildDetailScreen((SW + GAP) * 3);
+    log('Screen 4 done');
 
     figma.viewport.scrollAndZoomIntoView([s1, s2, s3, s4]);
-    figma.notify('✅ Vagabondo – 4 screens generated!', { timeout: 5000 });
+    log('All 4 screens generated successfully!', 'success');
   } catch (err) {
-    // Show the real error as a visible toast so no console needed
     const msg = (err && err.message) ? err.message : String(err);
-    figma.notify('ERROR: ' + msg, { error: true, timeout: 30000 });
+    const stack = (err && err.stack) ? '\n' + err.stack : '';
+    log('ERROR: ' + msg + stack, 'error');
   }
-  figma.closePlugin();
+  // Do NOT call figma.closePlugin() — leave panel open so the user can read the log.
 }
 
 run().catch(err => {
   const msg = (err && err.message) ? err.message : String(err);
-  figma.notify('FATAL: ' + msg, { error: true, timeout: 30000 });
-  figma.closePlugin();
+  log('FATAL (unhandled): ' + msg, 'error');
 });
