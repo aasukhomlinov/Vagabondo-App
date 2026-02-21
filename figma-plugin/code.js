@@ -4,6 +4,12 @@
 // Event Detail — using the exact design tokens from src/theme
 // ============================================================
 
+// TOP-LEVEL SYNC NOTIFY — proves the plugin file loaded at all.
+// If you see this toast, the file is being executed correctly.
+// If you do NOT see this toast, re-import the plugin from manifest.json:
+//   Figma menu > Plugins > Development > Import plugin from manifest…
+figma.notify('Vagabondo plugin loaded — building screens…', { timeout: 10000 });
+
 // ── Design Tokens ──────────────────────────────────────────
 const C = {
   primary:      '#FF5F2E',
@@ -566,4 +572,8 @@ async function run() {
   figma.closePlugin();
 }
 
-run();
+run().catch(err => {
+  const msg = (err && err.message) ? err.message : String(err);
+  figma.notify('FATAL: ' + msg, { error: true, timeout: 30000 });
+  figma.closePlugin();
+});
