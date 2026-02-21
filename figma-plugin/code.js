@@ -8,11 +8,12 @@
 // The panel appears immediately when the plugin runs.
 figma.showUI(__html__, { width: 420, height: 320, title: 'Vagabondo – Screen Generator' });
 
-// Logging helper — sends to UI panel and optionally shows a toast.
+// Logging helper — robust version: UI panel + toasts, all wrapped in try/catch
+// so one broken channel doesn't hide errors from another.
 function log(text, level = 'info') {
-  figma.ui.postMessage({ text, level });
-  if (level === 'error') figma.notify(text.slice(0, 120), { error: true, timeout: 20000 });
-  if (level === 'success') figma.notify(text.slice(0, 120), { timeout: 5000 });
+  try { figma.ui.postMessage({ text, level }); } catch (_) {}
+  if (level === 'error')   { try { figma.notify(text.slice(0, 120), { error: true, timeout: 20000 }); } catch (_) {} }
+  if (level === 'success') { try { figma.notify(text.slice(0, 120), { timeout: 5000 }); } catch (_) {} }
 }
 
 // ── Design Tokens ──────────────────────────────────────────
@@ -578,14 +579,36 @@ async function run() {
     figma.viewport.scrollAndZoomIntoView([s1, s2, s3, s4]);
     log('All 4 screens generated successfully!', 'success');
   } catch (err) {
-    const msg = (err && err.message) ? err.message : String(err);
-    const stack = (err && err.stack) ? '\n' + err.stack : '';
-    log('ERROR: ' + msg + stack, 'error');
+    const msg   = (err && err.message) ? err.message : String(err);
+    const stack = (err && err.stack)   ? err.stack   : '';
+
+    // ── Paint error onto the canvas ──────────────────────────
+    // This is 100% reliable — no fonts or UI required.
+    // 1. Select the red frame in the Layers panel on the left.
+    // 2. The full error is in the frame's name (top of the right panel).
+    try {
+      const errFrame = figma.createFrame();
+      errFrame.resize(900, 80);
+      errFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 0.18, b: 0.18 } }];
+      errFrame.name  = 'PLUGIN ERROR — ' + msg + (stack ? ' | stack: ' + stack : '');
+      figma.currentPage.appendChild(errFrame);
+      figma.viewport.scrollAndZoomIntoView([errFrame]);
+    } catch (_) {}
+
+    log('ERROR: ' + msg + (stack ? '\n' + stack : ''), 'error');
   }
-  // Do NOT call figma.closePlugin() — leave panel open so the user can read the log.
+  // Leave panel open so the log remains readable.
 }
 
 run().catch(err => {
   const msg = (err && err.message) ? err.message : String(err);
+  try {
+    const f = figma.createFrame();
+    f.resize(900, 80);
+    f.fills = [{ type: 'SOLID', color: { r: 1, g: 0.18, b: 0.18 } }];
+    f.name  = 'FATAL ERROR — ' + msg;
+    figma.currentPage.appendChild(f);
+    figma.viewport.scrollAndZoomIntoView([f]);
+  } catch (_) {}
   log('FATAL (unhandled): ' + msg, 'error');
 });
