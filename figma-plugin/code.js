@@ -98,20 +98,20 @@ async function loadFont(family, style) {
 // Weight → Inter style
 function weightToStyle(w) {
   if (w === '700' || w === 'bold')   return 'Bold';
-  if (w === '600')                    return 'SemiBold';
+  if (w === '600')                    return 'Semi Bold';
   return 'Regular';
 }
 
 async function txt(content, opts = {}) {
   const style  = weightToStyle(opts.weight || '400');
   const family = 'Inter';
-  try { await loadFont(family, style); } catch { await loadFont('Roboto', style === 'SemiBold' ? 'Medium' : style); }
+  try { await loadFont(family, style); } catch { await loadFont('Roboto', style === 'Semi Bold' ? 'Medium' : style); }
 
   const t = figma.createText();
   try {
     t.fontName = { family, style };
   } catch {
-    t.fontName = { family: 'Roboto', style: style === 'SemiBold' ? 'Medium' : style };
+    t.fontName = { family: 'Roboto', style: style === 'Semi Bold' ? 'Medium' : style };
   }
   t.fontSize  = opts.size  || 14;
   t.fills     = solidFill(opts.color || C.text);
@@ -529,11 +529,11 @@ async function run() {
     await Promise.all([
       figma.loadFontAsync({ family: 'Inter', style: 'Regular' }),
       figma.loadFontAsync({ family: 'Inter', style: 'Bold' }),
-      figma.loadFontAsync({ family: 'Inter', style: 'SemiBold' }),
+      figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' }),
     ]);
     _loaded.add('Inter|Regular');
     _loaded.add('Inter|Bold');
-    _loaded.add('Inter|SemiBold');
+    _loaded.add('Inter|Semi Bold');
   } catch {
     // Fallback: use Roboto (always available in Figma)
     await Promise.all([
@@ -543,7 +543,7 @@ async function run() {
     ]);
     _loaded.add('Roboto|Regular');
     _loaded.add('Roboto|Bold');
-    _loaded.add('Roboto|SemiBold');
+    _loaded.add('Roboto|Medium');
   }
 
   const s1 = await buildMapScreen(0);
