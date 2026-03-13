@@ -1,26 +1,26 @@
 {
   "expo": {
-    "name": "Vagabondo",
-    "slug": "vagabondo",
+    "name": "Joint",
+    "slug": "joint",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#FF5F2E"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vagabondo.app",
+      "bundleIdentifier": "com.joint.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Vagabondo needs your location to show nearby events and let you create events at your current spot."
+        "NSLocationWhenInUseUsageDescription": "Joint needs your location to show nearby events and let you create events at your current spot."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FF5F2E"
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.vagabondo.app",
+      "package": "com.joint.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
@@ -38,7 +38,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Vagabondo needs your location to show nearby events."
+          "locationWhenInUsePermission": "Joint needs your location to show nearby events."
         }
       ]
     ]

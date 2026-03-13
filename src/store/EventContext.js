@@ -8,9 +8,9 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateId } from '../utils/helpers';
 
-const EVENTS_KEY = '@vagabondo:events_v2';
-const LIKED_KEY = '@vagabondo:liked_v2';
-const GOING_KEY = '@vagabondo:going_v2';
+const EVENTS_KEY = '@joint:events_v2';
+const LIKED_KEY = '@joint:liked_v2';
+const GOING_KEY = '@joint:going_v2';
 
 // ---------------------------------------------------------------------------
 // Seed data — Rome, Italy

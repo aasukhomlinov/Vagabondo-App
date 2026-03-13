@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../theme';
 
 /**
- * Shared top header — "vagabondo" logo + scrollable filter chips.
+ * Shared top header — "joint" logo + scrollable filter chips.
  * Props:
  *   city        string   — displayed city name
  *   category    string   — active category filter label ('' = all)
@@ -30,7 +30,7 @@ export default function AppHeader({
   return (
     <View style={styles.container}>
       {/* Logo */}
-      <Text style={styles.logo}>vagabondo</Text>
+      <Text style={styles.logo}>joint</Text>
 
       {/* Filter chips */}
       <ScrollView
