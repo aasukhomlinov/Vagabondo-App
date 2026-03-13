@@ -5,20 +5,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 import { useEvents } from '../store/EventContext';
-import { colors, categories, shadow, spacing, radius, typography } from '../theme';
-import { DEFAULT_LOCATION, DEFAULT_DELTA, formatTimeAgo } from '../utils/helpers';
+import { colors, spacing, radius, typography, shadow } from '../theme';
+import { DEFAULT_LOCATION, DEFAULT_DELTA, formatEventDate } from '../utils/helpers';
+import AppHeader from '../components/AppHeader';
+import EventPosterCard, { AttendeeStack } from '../components/EventPosterCard';
+
+// Height of the bottom sheet content (poster + info row)
+const SHEET_HEIGHT = 320;
 
 export default function MapScreen() {
-  const { events } = useEvents();
+  const { events, toggleLiked, isLiked } = useEvents();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
@@ -26,9 +31,10 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
-  const previewAnim = useRef(new Animated.Value(0)).current;
 
-  // Request location on mount
+  const sheetAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+
+  // Location
   useEffect(() => {
     (async () => {
       try {
@@ -42,306 +48,284 @@ export default function MapScreen() {
             longitude: loc.coords.longitude,
           });
         }
-      } catch {
-        // fall through to default location
-      } finally {
-        setLocationLoading(false);
-      }
+      } catch { /* use default */ }
+      finally { setLocationLoading(false); }
     })();
   }, []);
 
-  const initialRegion = {
-    ...(userLocation || DEFAULT_LOCATION),
-    ...DEFAULT_DELTA,
-  };
-
-  const showPreview = useCallback((event) => {
+  const openSheet = useCallback((event) => {
     setSelectedEvent(event);
-    Animated.spring(previewAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 80,
-      friction: 10,
-    }).start();
-  }, [previewAnim]);
-
-  const hidePreview = useCallback(() => {
-    Animated.timing(previewAnim, {
+    Animated.spring(sheetAnim, {
       toValue: 0,
-      duration: 200,
+      useNativeDriver: true,
+      tension: 70,
+      friction: 12,
+    }).start();
+  }, [sheetAnim]);
+
+  const closeSheet = useCallback(() => {
+    Animated.timing(sheetAnim, {
+      toValue: SHEET_HEIGHT,
+      duration: 220,
       useNativeDriver: true,
     }).start(() => setSelectedEvent(null));
-  }, [previewAnim]);
-
-  const handleMarkerPress = useCallback((event) => {
-    showPreview(event);
-  }, [showPreview]);
+  }, [sheetAnim]);
 
   const handleMapPress = useCallback(() => {
-    if (selectedEvent) hidePreview();
-  }, [selectedEvent, hidePreview]);
+    if (selectedEvent) closeSheet();
+  }, [selectedEvent, closeSheet]);
 
   const goToUserLocation = useCallback(() => {
     if (userLocation && mapRef.current) {
-      mapRef.current.animateToRegion(
-        { ...userLocation, ...DEFAULT_DELTA },
-        600
-      );
+      mapRef.current.animateToRegion({ ...userLocation, ...DEFAULT_DELTA }, 600);
     }
   }, [userLocation]);
 
-  const previewTranslateY = previewAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [200, 0],
-  });
+  const initialRegion = { ...(userLocation || DEFAULT_LOCATION), ...DEFAULT_DELTA };
 
   return (
     <View style={styles.container}>
+      {/* Map — full screen */}
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={StyleSheet.absoluteFillObject}
         initialRegion={initialRegion}
         showsUserLocation={!!userLocation}
         showsMyLocationButton={false}
         onPress={handleMapPress}
       >
-        {events.map((event) => {
-          const cat = categories[event.category] || categories.other;
-          return (
-            <Marker
-              key={event.id}
-              coordinate={event.location}
-              onPress={() => handleMarkerPress(event)}
-            >
-              <View style={[styles.pin, { backgroundColor: cat.color }]}>
-                <Text style={styles.pinEmoji}>{cat.emoji}</Text>
-              </View>
-              <View style={[styles.pinTail, { borderTopColor: cat.color }]} />
-            </Marker>
-          );
-        })}
+        {events.map((event) => (
+          <EventPin
+            key={event.id}
+            event={event}
+            selected={selectedEvent?.id === event.id}
+            onPress={() => openSheet(event)}
+          />
+        ))}
       </MapView>
 
       {/* Header overlay */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerInner}>
-          <Text style={styles.appName}>Vagabondo</Text>
-          <Text style={styles.eventCount}>{events.length} events nearby</Text>
-        </View>
+      <View style={[styles.headerWrap, { paddingTop: insets.top }]}>
+        <AppHeader city="Rome" onCityPress={() => {}} onCategoryPress={() => {}} onTimePress={() => {}} />
       </View>
 
       {/* My location button */}
       {userLocation && (
         <TouchableOpacity
-          style={[styles.locationBtn, { bottom: 120 + insets.bottom }]}
+          style={[styles.locationBtn, { bottom: SHEET_HEIGHT + 80 + insets.bottom }]}
           onPress={goToUserLocation}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Text style={styles.locationBtnIcon}>📍</Text>
+          <Ionicons name="locate-outline" size={20} color={colors.black} />
         </TouchableOpacity>
       )}
 
-      {/* Event preview card */}
-      {selectedEvent && (
-        <Animated.View
-          style={[
-            styles.previewCard,
-            {
-              bottom: 80 + insets.bottom,
-              transform: [{ translateY: previewTranslateY }],
-              opacity: previewAnim,
-            },
-          ]}
-        >
-          <EventPreview
+      {/* Location loading badge */}
+      {locationLoading && (
+        <View style={[styles.loadingBadge, { top: insets.top + 70 }]}>
+          <ActivityIndicator size="small" color={colors.black} />
+        </View>
+      )}
+
+      {/* Bottom sheet — slides up on pin tap */}
+      <Animated.View
+        style={[
+          styles.sheet,
+          { bottom: insets.bottom + 60, transform: [{ translateY: sheetAnim }] },
+        ]}
+        pointerEvents={selectedEvent ? 'box-none' : 'none'}
+      >
+        {selectedEvent && (
+          <BottomSheet
             event={selectedEvent}
-            onClose={hidePreview}
+            liked={isLiked(selectedEvent.id)}
+            onLike={() => toggleLiked(selectedEvent.id)}
+            onClose={closeSheet}
             onOpen={() => {
-              hidePreview();
+              closeSheet();
               navigation.navigate('EventDetail', { eventId: selectedEvent.id });
             }}
           />
-        </Animated.View>
-      )}
-
-      {locationLoading && (
-        <View style={styles.locationLoadingBadge}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.locationLoadingText}>Finding you…</Text>
-        </View>
-      )}
+        )}
+      </Animated.View>
     </View>
   );
 }
 
-function EventPreview({ event, onClose, onOpen }) {
-  const cat = categories[event.category] || categories.other;
+// ---------------------------------------------------------------------------
+// Map pin — outline (unselected) or solid black (selected)
+// ---------------------------------------------------------------------------
+function EventPin({ event, selected, onPress }) {
   return (
-    <View style={styles.preview}>
-      <TouchableOpacity style={styles.previewClose} onPress={onClose} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-        <Text style={styles.previewCloseText}>✕</Text>
-      </TouchableOpacity>
-      <View style={styles.previewBadge}>
-        <Text style={[styles.previewBadgeEmoji]}>{cat.emoji}</Text>
-        <Text style={[styles.previewBadgeLabel, { color: cat.color }]}>{cat.label}</Text>
+    <Marker coordinate={event.location} onPress={onPress} tracksViewChanges={false}>
+      <View style={styles.pinWrap}>
+        <Ionicons
+          name={selected ? 'location' : 'location-outline'}
+          size={selected ? 40 : 32}
+          color={selected ? colors.black : colors.black}
+        />
       </View>
-      <Text style={styles.previewTitle} numberOfLines={2}>{event.title}</Text>
-      <Text style={styles.previewMeta}>
-        <Text style={styles.previewAuthor}>by {event.authorName}</Text>
-        {'  ·  '}
-        <Text>{formatTimeAgo(event.createdAt)}</Text>
-      </Text>
-      <View style={styles.previewFooter}>
-        <View style={styles.previewStats}>
-          <Text style={styles.previewStat}>🙋 {event.goingCount} going</Text>
-          <Text style={styles.previewStat}>💬 {event.replies.length} replies</Text>
-        </View>
-        <TouchableOpacity style={styles.previewOpenBtn} onPress={onOpen} activeOpacity={0.8}>
-          <Text style={styles.previewOpenText}>View →</Text>
+    </Marker>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Bottom sheet content
+// ---------------------------------------------------------------------------
+function BottomSheet({ event, liked, onLike, onClose, onOpen }) {
+  return (
+    <View style={styles.sheetInner}>
+      {/* Poster card with X and heart overlaid */}
+      <View style={styles.posterWrap}>
+        <EventPosterCard event={event} height={200} style={styles.posterRadius} />
+
+        {/* X button */}
+        <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
+          <Ionicons name="close" size={16} color={colors.black} />
+        </TouchableOpacity>
+
+        {/* Heart button */}
+        <TouchableOpacity style={styles.heartBtn} onPress={onLike} activeOpacity={0.8}>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={18}
+            color={liked ? colors.liked : colors.black}
+          />
         </TouchableOpacity>
       </View>
+
+      {/* Info row below poster */}
+      <TouchableOpacity style={styles.infoRow} onPress={onOpen} activeOpacity={0.9}>
+        <View style={styles.infoLeft}>
+          <Text style={styles.infoTitle} numberOfLines={1}>{event.title}</Text>
+          <View style={styles.infoMeta}>
+            <Ionicons name="location-outline" size={12} color={colors.gray} />
+            <Text style={styles.infoMetaText}>{event.venue}</Text>
+            <Text style={styles.infoMetaDot}>·</Text>
+            <Ionicons name="calendar-outline" size={12} color={colors.gray} />
+            <Text style={styles.infoMetaText}>{formatEventDate(event.dateTime)}</Text>
+            <Text style={styles.infoMetaDot}>·</Text>
+            <AttendeeStack
+              colors={event.attendeeColors || []}
+              count={event.goingCount}
+              textColor={colors.black}
+            />
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.black} />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
 
-  map: { ...StyleSheet.absoluteFillObject },
-
-  // Header
-  header: {
+  headerWrap: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerInner: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    ...shadow.md,
-  },
-  appName: {
-    ...typography.h3,
-    color: colors.primary,
-    letterSpacing: -0.5,
-  },
-  eventCount: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
+    backgroundColor: colors.white,
+    ...{
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 4,
+    },
   },
 
-  // Map pin
-  pin: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
-    ...shadow.sm,
-  },
-  pinEmoji: { fontSize: 16 },
-  pinTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    alignSelf: 'center',
-    marginTop: -1,
-  },
-
-  // Location button
   locationBtn: {
     position: 'absolute',
     right: spacing.md,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.card,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.md,
   },
-  locationBtnIcon: { fontSize: 20 },
 
-  // Preview card
-  previewCard: {
+  loadingBadge: {
     position: 'absolute',
-    left: spacing.md,
     right: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.sm,
   },
-  preview: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadow.lg,
-  },
-  previewClose: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 28,
-    height: 28,
+
+  // Pin
+  pinWrap: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previewCloseText: { fontSize: 14, color: colors.textLight },
-  previewBadge: {
-    flexDirection: 'row',
+
+  // Bottom sheet
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  sheetInner: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
+    ...shadow.lg,
+  },
+
+  posterWrap: {
+    position: 'relative',
+  },
+  posterRadius: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+  },
+
+  closeBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.7)',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 6,
+    justifyContent: 'center',
   },
-  previewBadgeEmoji: { fontSize: 14 },
-  previewBadgeLabel: { ...typography.label },
-  previewTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 4,
-    paddingRight: 20,
+  heartBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  previewMeta: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-  previewAuthor: { fontWeight: '600', color: colors.text },
-  previewFooter: {
+
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  previewStats: { flexDirection: 'row', gap: spacing.md },
-  previewStat: { ...typography.bodySmall, color: colors.textSecondary },
-  previewOpenBtn: {
-    backgroundColor: colors.primary,
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
+    paddingVertical: spacing.md,
   },
-  previewOpenText: { ...typography.label, color: '#FFF' },
-
-  // Location loading
-  locationLoadingBadge: {
-    position: 'absolute',
-    bottom: 90,
-    alignSelf: 'center',
+  infoLeft: { flex: 1, marginRight: spacing.sm },
+  infoTitle: { ...typography.h3, color: colors.black, marginBottom: 4 },
+  infoMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    ...shadow.sm,
+    gap: 4,
+    flexWrap: 'wrap',
   },
-  locationLoadingText: { ...typography.caption, color: colors.textSecondary },
+  infoMetaText: { ...typography.caption, color: colors.gray },
+  infoMetaDot: { ...typography.caption, color: colors.grayMid },
 });

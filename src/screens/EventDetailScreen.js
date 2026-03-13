@@ -12,13 +12,15 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { useEvents } from '../store/EventContext';
-import { colors, categories, spacing, radius, typography, shadow } from '../theme';
-import { formatTimeAgo } from '../utils/helpers';
+import { colors, spacing, radius, typography, shadow } from '../theme';
+import { formatTimeAgo, formatEventDate } from '../utils/helpers';
+import EventPosterCard, { AttendeeStack } from '../components/EventPosterCard';
 
 export default function EventDetailScreen() {
   const route = useRoute();
@@ -26,8 +28,9 @@ export default function EventDetailScreen() {
   const insets = useSafeAreaInsets();
   const { eventId } = route.params;
 
-  const { getEvent, toggleGoing, isGoing, addReply } = useEvents();
+  const { getEvent, toggleLiked, toggleGoing, isLiked, isGoing, addReply } = useEvents();
   const event = getEvent(eventId);
+  const liked = isLiked(eventId);
   const going = isGoing(eventId);
 
   const [replyText, setReplyText] = useState('');
@@ -36,7 +39,6 @@ export default function EventDetailScreen() {
   const [replyInstagram, setReplyInstagram] = useState('');
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
-  const scrollRef = useRef(null);
 
   if (!event) {
     return (
@@ -46,16 +48,11 @@ export default function EventDetailScreen() {
     );
   }
 
-  const cat = categories[event.category] || categories.other;
-
   const openLink = async (url) => {
     try {
       const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Cannot open link', url);
-      }
+      if (canOpen) await Linking.openURL(url);
+      else Alert.alert('Cannot open', url);
     } catch {
       Alert.alert('Error', 'Could not open this link.');
     }
@@ -64,29 +61,11 @@ export default function EventDetailScreen() {
   const handleSubmitReply = async () => {
     if (!replyText.trim() || !replyName.trim()) return;
     setSubmittingReply(true);
-
     const social = {};
-    if (replyTelegram.trim()) {
-      social.telegram = replyTelegram.startsWith('http')
-        ? replyTelegram.trim()
-        : `https://t.me/${replyTelegram.trim().replace('@', '')}`;
-    }
-    if (replyInstagram.trim()) {
-      social.instagram = replyInstagram.startsWith('http')
-        ? replyInstagram.trim()
-        : `https://instagram.com/${replyInstagram.trim().replace('@', '')}`;
-    }
-
-    addReply(eventId, {
-      text: replyText.trim(),
-      authorName: replyName.trim(),
-      social,
-    });
-
-    setReplyText('');
-    setReplyName('');
-    setReplyTelegram('');
-    setReplyInstagram('');
+    if (replyTelegram.trim()) social.telegram = `https://t.me/${replyTelegram.trim().replace('@', '')}`;
+    if (replyInstagram.trim()) social.instagram = `https://instagram.com/${replyInstagram.trim().replace('@', '')}`;
+    addReply(eventId, { text: replyText.trim(), authorName: replyName.trim(), social });
+    setReplyText(''); setReplyName(''); setReplyTelegram(''); setReplyInstagram('');
     setShowReplyForm(false);
     setSubmittingReply(false);
   };
@@ -94,44 +73,71 @@ export default function EventDetailScreen() {
   const hasSocial = event.social && Object.keys(event.social).length > 0;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header nav */}
+        {/* Nav bar */}
         <View style={styles.nav}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Back</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.navBtn}>
+            <Ionicons name="arrow-back" size={22} color={colors.black} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => toggleLiked(eventId)} style={styles.navBtn}>
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={22}
+              color={liked ? colors.liked : colors.black}
+            />
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          ref={scrollRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xxl }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Category badge */}
-          <View style={[styles.catBadge, { backgroundColor: cat.bg }]}>
-            <Text style={styles.catEmoji}>{cat.emoji}</Text>
-            <Text style={[styles.catLabel, { color: cat.color }]}>{cat.label}</Text>
+          {/* Poster */}
+          <EventPosterCard event={event} height={260} />
+
+          {/* Main info */}
+          <View style={styles.infoSection}>
+            <Text style={styles.title}>{event.title}</Text>
+
+            {/* Location · Date */}
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={14} color={colors.gray} />
+              <Text style={styles.metaText}>{event.venue || event.locationName}</Text>
+              <Text style={styles.metaDot}>·</Text>
+              <Ionicons name="calendar-outline" size={14} color={colors.gray} />
+              <Text style={styles.metaText}>{formatEventDate(event.dateTime)}</Text>
+            </View>
+
+            {/* Attendees + "I'm going" */}
+            <View style={styles.goingRow}>
+              <AttendeeStack
+                colors={event.attendeeColors || []}
+                count={event.goingCount}
+                textColor={colors.black}
+              />
+              <TouchableOpacity
+                style={[styles.goingBtn, going && styles.goingBtnActive]}
+                onPress={() => toggleGoing(eventId)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.goingBtnText, going && styles.goingBtnTextActive]}>
+                  {going ? "I'm going ✓" : "I'm going"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Title */}
-          <Text style={styles.title}>{event.title}</Text>
-
-          {/* Meta */}
-          <View style={styles.metaRow}>
-            <Text style={styles.metaAuthor}>by {event.authorName}</Text>
-            <Text style={styles.metaSep}>·</Text>
-            <Text style={styles.metaTime}>{formatTimeAgo(event.createdAt)}</Text>
-          </View>
+          <View style={styles.divider} />
 
           {/* Description */}
           {event.description ? (
-            <Text style={styles.description}>{event.description}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.description}>{event.description}</Text>
+            </View>
           ) : null}
 
           {/* Map */}
@@ -141,8 +147,8 @@ export default function EventDetailScreen() {
               initialRegion={{
                 latitude: event.location.latitude,
                 longitude: event.location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta: 0.012,
+                longitudeDelta: 0.012,
               }}
               scrollEnabled={false}
               zoomEnabled={false}
@@ -150,78 +156,42 @@ export default function EventDetailScreen() {
               rotateEnabled={false}
             >
               <Marker coordinate={event.location}>
-                <View style={[styles.mapPin, { backgroundColor: cat.color }]}>
-                  <Text style={styles.mapPinEmoji}>{cat.emoji}</Text>
-                </View>
+                <Ionicons name="location" size={32} color={colors.black} />
               </Marker>
             </MapView>
             {event.locationName ? (
-              <View style={styles.locationLabel}>
-                <Text style={styles.locationLabelText} numberOfLines={1}>
-                  📍 {event.locationName}
+              <View style={styles.mapLabel}>
+                <Text style={styles.mapLabelText} numberOfLines={1}>
+                  {event.locationName}
                 </Text>
               </View>
             ) : null}
           </View>
 
-          {/* Going button */}
-          <TouchableOpacity
-            style={[styles.goingBtn, going && styles.goingBtnActive]}
-            onPress={() => toggleGoing(eventId)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.goingBtnEmoji}>{going ? '✅' : '🙋'}</Text>
-            <Text style={[styles.goingBtnText, going && styles.goingBtnTextActive]}>
-              {going ? "You're going!" : "I'm going!"}
-            </Text>
-            <View style={[styles.goingCount, going && styles.goingCountActive]}>
-              <Text style={[styles.goingCountText, going && styles.goingCountTextActive]}>
-                {event.goingCount}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Connect via social */}
+          {/* Social connect */}
           {hasSocial && (
-            <View style={styles.socialSection}>
-              <Text style={styles.socialTitle}>Connect with {event.authorName}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Connect with {event.authorName}</Text>
               <View style={styles.socialBtns}>
                 {event.social.telegram && (
-                  <SocialBtn
-                    emoji="✈️"
-                    label="Telegram"
-                    color="#2AABEE"
-                    onPress={() => openLink(event.social.telegram)}
-                  />
+                  <SocialBtn icon="paper-plane-outline" label="Telegram" onPress={() => openLink(event.social.telegram)} />
                 )}
                 {event.social.instagram && (
-                  <SocialBtn
-                    emoji="📸"
-                    label="Instagram"
-                    color="#E1306C"
-                    onPress={() => openLink(event.social.instagram)}
-                  />
+                  <SocialBtn icon="camera-outline" label="Instagram" onPress={() => openLink(event.social.instagram)} />
                 )}
                 {event.social.whatsapp && (
-                  <SocialBtn
-                    emoji="💬"
-                    label="WhatsApp"
-                    color="#25D366"
-                    onPress={() => openLink(event.social.whatsapp)}
-                  />
+                  <SocialBtn icon="chatbubble-outline" label="WhatsApp" onPress={() => openLink(event.social.whatsapp)} />
                 )}
               </View>
             </View>
           )}
 
-          {/* Divider */}
           <View style={styles.divider} />
 
           {/* Replies */}
-          <View style={styles.repliesSection}>
-            <Text style={styles.repliesTitle}>
-              Replies{' '}
-              <Text style={styles.repliesCount}>{event.replies.length}</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Replies ({event.replies.length})
             </Text>
 
             {event.replies.length === 0 && (
@@ -232,28 +202,17 @@ export default function EventDetailScreen() {
               <ReplyCard key={reply.id} reply={reply} onOpenLink={openLink} />
             ))}
 
-            {/* Add reply */}
             {!showReplyForm ? (
-              <TouchableOpacity
-                style={styles.addReplyBtn}
-                onPress={() => setShowReplyForm(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.addReplyEmoji}>💬</Text>
+              <TouchableOpacity style={styles.addReplyBtn} onPress={() => setShowReplyForm(true)} activeOpacity={0.8}>
+                <Ionicons name="chatbubble-outline" size={16} color={colors.gray} />
                 <Text style={styles.addReplyText}>Write a reply…</Text>
               </TouchableOpacity>
             ) : (
               <ReplyForm
-                name={replyName}
-                text={replyText}
-                telegram={replyTelegram}
-                instagram={replyInstagram}
-                onChangeName={setReplyName}
-                onChangeText={setReplyText}
-                onChangeTelegram={setReplyTelegram}
-                onChangeInstagram={setReplyInstagram}
-                onSubmit={handleSubmitReply}
-                onCancel={() => setShowReplyForm(false)}
+                name={replyName} text={replyText} telegram={replyTelegram} instagram={replyInstagram}
+                onChangeName={setReplyName} onChangeText={setReplyText}
+                onChangeTelegram={setReplyTelegram} onChangeInstagram={setReplyInstagram}
+                onSubmit={handleSubmitReply} onCancel={() => setShowReplyForm(false)}
                 submitting={submittingReply}
               />
             )}
@@ -267,15 +226,11 @@ export default function EventDetailScreen() {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-function SocialBtn({ emoji, label, color, onPress }) {
+function SocialBtn({ icon, label, onPress }) {
   return (
-    <TouchableOpacity
-      style={[styles.socialBtnWrap, { borderColor: color }]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.socialBtnEmoji}>{emoji}</Text>
-      <Text style={[styles.socialBtnLabel, { color }]}>{label}</Text>
+    <TouchableOpacity style={sStyles.btn} onPress={onPress} activeOpacity={0.8}>
+      <Ionicons name={icon} size={18} color={colors.black} />
+      <Text style={sStyles.label}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -283,33 +238,29 @@ function SocialBtn({ emoji, label, color, onPress }) {
 function ReplyCard({ reply, onOpenLink }) {
   const hasSocial = reply.social && Object.keys(reply.social).length > 0;
   return (
-    <View style={styles.replyCard}>
-      <View style={styles.replyHeader}>
-        <View style={styles.replyAvatar}>
-          <Text style={styles.replyAvatarText}>{reply.authorName[0].toUpperCase()}</Text>
+    <View style={rStyles.card}>
+      <View style={rStyles.header}>
+        <View style={rStyles.avatar}>
+          <Text style={rStyles.avatarText}>{reply.authorName[0].toUpperCase()}</Text>
         </View>
-        <View style={styles.replyMeta}>
-          <Text style={styles.replyAuthor}>{reply.authorName}</Text>
-          <Text style={styles.replyTime}>{formatTimeAgo(reply.createdAt)}</Text>
+        <View>
+          <Text style={rStyles.author}>{reply.authorName}</Text>
+          <Text style={rStyles.time}>{formatTimeAgo(reply.createdAt)}</Text>
         </View>
       </View>
-      <Text style={styles.replyText}>{reply.text}</Text>
+      <Text style={rStyles.text}>{reply.text}</Text>
       {hasSocial && (
-        <View style={styles.replyConnect}>
+        <View style={rStyles.connect}>
           {reply.social.telegram && (
-            <TouchableOpacity
-              style={styles.replyConnectBtn}
-              onPress={() => onOpenLink(reply.social.telegram)}
-            >
-              <Text style={styles.replyConnectText}>✈️ Telegram</Text>
+            <TouchableOpacity style={rStyles.connectBtn} onPress={() => onOpenLink(reply.social.telegram)}>
+              <Ionicons name="paper-plane-outline" size={12} color={colors.black} />
+              <Text style={rStyles.connectText}>Telegram</Text>
             </TouchableOpacity>
           )}
           {reply.social.instagram && (
-            <TouchableOpacity
-              style={styles.replyConnectBtn}
-              onPress={() => onOpenLink(reply.social.instagram)}
-            >
-              <Text style={styles.replyConnectText}>📸 Instagram</Text>
+            <TouchableOpacity style={rStyles.connectBtn} onPress={() => onOpenLink(reply.social.instagram)}>
+              <Ionicons name="camera-outline" size={12} color={colors.black} />
+              <Text style={rStyles.connectText}>Instagram</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -318,65 +269,29 @@ function ReplyCard({ reply, onOpenLink }) {
   );
 }
 
-function ReplyForm({
-  name, text, telegram, instagram,
-  onChangeName, onChangeText, onChangeTelegram, onChangeInstagram,
-  onSubmit, onCancel, submitting,
-}) {
+function ReplyForm({ name, text, telegram, instagram, onChangeName, onChangeText,
+  onChangeTelegram, onChangeInstagram, onSubmit, onCancel, submitting }) {
   const canSubmit = name.trim().length > 0 && text.trim().length > 0;
   return (
-    <View style={styles.replyForm}>
-      <Text style={styles.replyFormTitle}>Your reply</Text>
-      <TextInput
-        style={styles.replyInput}
-        placeholder="Your name"
-        placeholderTextColor={colors.textLight}
-        value={name}
-        onChangeText={onChangeName}
-        maxLength={30}
-      />
-      <TextInput
-        style={[styles.replyInput, styles.replyTextArea]}
-        placeholder="Write your reply…"
-        placeholderTextColor={colors.textLight}
-        value={text}
-        onChangeText={onChangeText}
-        multiline
-        numberOfLines={3}
-        textAlignVertical="top"
-        maxLength={500}
-      />
-      <Text style={styles.replyFormHint}>Add social links so people can reach you</Text>
-      <TextInput
-        style={styles.replyInput}
-        placeholder="Telegram @username (optional)"
-        placeholderTextColor={colors.textLight}
-        value={telegram}
-        onChangeText={onChangeTelegram}
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.replyInput}
-        placeholder="Instagram @username (optional)"
-        placeholderTextColor={colors.textLight}
-        value={instagram}
-        onChangeText={onChangeInstagram}
-        autoCapitalize="none"
-      />
-      <View style={styles.replyFormActions}>
-        <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-          <Text style={styles.cancelBtnText}>Cancel</Text>
+    <View style={rfStyles.form}>
+      <TextInput style={rfStyles.input} placeholder="Your name" placeholderTextColor={colors.grayMid}
+        value={name} onChangeText={onChangeName} maxLength={30} />
+      <TextInput style={[rfStyles.input, rfStyles.textArea]} placeholder="Write your reply…"
+        placeholderTextColor={colors.grayMid} value={text} onChangeText={onChangeText}
+        multiline numberOfLines={3} textAlignVertical="top" maxLength={500} />
+      <TextInput style={rfStyles.input} placeholder="Telegram @username (optional)"
+        placeholderTextColor={colors.grayMid} value={telegram} onChangeText={onChangeTelegram} autoCapitalize="none" />
+      <TextInput style={rfStyles.input} placeholder="Instagram @username (optional)"
+        placeholderTextColor={colors.grayMid} value={instagram} onChangeText={onChangeInstagram} autoCapitalize="none" />
+      <View style={rfStyles.actions}>
+        <TouchableOpacity style={rfStyles.cancelBtn} onPress={onCancel}>
+          <Text style={rfStyles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
-          onPress={onSubmit}
-          disabled={!canSubmit || submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <Text style={styles.submitBtnText}>Post reply</Text>
-          )}
+        <TouchableOpacity style={[rfStyles.submitBtn, !canSubmit && rfStyles.disabled]}
+          onPress={onSubmit} disabled={!canSubmit || submitting}>
+          {submitting
+            ? <ActivityIndicator size="small" color={colors.white} />
+            : <Text style={rfStyles.submitText}>Post reply</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -384,232 +299,125 @@ function ReplyForm({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-
+  container: { flex: 1, backgroundColor: colors.white },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  notFoundText: { ...typography.body, color: colors.textSecondary },
+  notFoundText: { ...typography.body, color: colors.gray },
 
   nav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.grayBorder,
   },
-  backBtn: {},
-  backText: { ...typography.body, color: colors.primary, fontWeight: '600' },
+  navBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 
   scroll: { flex: 1 },
-  scrollContent: { padding: spacing.md, paddingBottom: spacing.xxl },
+  scrollContent: { paddingBottom: spacing.xxl },
 
-  catBadge: {
+  infoSection: { padding: spacing.md, paddingBottom: 0 },
+  title: { ...typography.h1, color: colors.black, marginBottom: spacing.sm },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: spacing.md, flexWrap: 'wrap' },
+  metaText: { ...typography.bodySmall, color: colors.gray },
+  metaDot: { ...typography.bodySmall, color: colors.grayMid },
+
+  goingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    marginBottom: spacing.sm,
+    justifyContent: 'space-between',
+    paddingBottom: spacing.md,
   },
-  catEmoji: { fontSize: 16 },
-  catLabel: { ...typography.label },
-
-  title: { ...typography.h1, color: colors.text, marginBottom: spacing.xs },
-
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md },
-  metaAuthor: { ...typography.bodySmall, color: colors.text, fontWeight: '600' },
-  metaSep: { color: colors.textLight },
-  metaTime: { ...typography.bodySmall, color: colors.textSecondary },
-
-  description: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 24,
-    marginBottom: spacing.lg,
+  goingBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.black,
   },
+  goingBtnActive: { backgroundColor: colors.black },
+  goingBtnText: { ...typography.label, color: colors.black, fontSize: 13 },
+  goingBtnTextActive: { color: colors.white },
 
-  // Map
+  divider: { height: 1, backgroundColor: colors.grayBorder, marginHorizontal: spacing.md },
+
+  section: { padding: spacing.md },
+  sectionTitle: { ...typography.h3, color: colors.black, marginBottom: spacing.sm },
+  description: { ...typography.body, color: colors.black, lineHeight: 24 },
+
   mapContainer: {
+    height: 160,
+    marginHorizontal: spacing.md,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    height: 180,
     marginBottom: spacing.md,
     ...shadow.sm,
   },
   map: { flex: 1 },
-  mapPin: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
+  mapLabel: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: spacing.md, paddingVertical: 6,
   },
-  mapPinEmoji: { fontSize: 16 },
-  locationLabel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-  },
-  locationLabelText: { ...typography.caption, color: '#FFF' },
+  mapLabelText: { ...typography.caption, color: colors.white },
 
-  // Going button
-  goingBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingVertical: 14,
-    marginBottom: spacing.lg,
-  },
-  goingBtnActive: {
-    backgroundColor: colors.goingBg,
-    borderColor: colors.going,
-  },
-  goingBtnEmoji: { fontSize: 22 },
-  goingBtnText: {
-    ...typography.button,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  goingBtnTextActive: { color: colors.going },
-  goingCount: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.border,
-    minWidth: 28,
-    alignItems: 'center',
-  },
-  goingCountActive: { backgroundColor: colors.going },
-  goingCountText: { ...typography.label, color: colors.textSecondary },
-  goingCountTextActive: { color: '#FFF' },
-
-  // Social section
-  socialSection: { marginBottom: spacing.lg },
-  socialTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   socialBtns: { flexDirection: 'row', gap: spacing.sm },
-  socialBtnWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    borderWidth: 2,
-    backgroundColor: colors.card,
-  },
-  socialBtnEmoji: { fontSize: 18 },
-  socialBtnLabel: { ...typography.label },
 
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.lg,
-  },
-
-  // Replies
-  repliesSection: {},
-  repliesTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.md },
-  repliesCount: { color: colors.primary },
-  noReplies: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
-
+  noReplies: { ...typography.body, color: colors.gray, marginBottom: spacing.md },
   addReplyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    padding: spacing.md, borderWidth: 1, borderColor: colors.grayBorder,
+    borderRadius: radius.md, borderStyle: 'dashed',
   },
-  addReplyEmoji: { fontSize: 18 },
-  addReplyText: { ...typography.body, color: colors.textSecondary },
+  addReplyText: { ...typography.body, color: colors.gray },
+});
 
-  // Reply card
-  replyCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadow.sm,
+const sStyles = StyleSheet.create({
+  btn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.black,
   },
-  replyHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  replyAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  replyAvatarText: { ...typography.label, color: '#FFF', fontSize: 15 },
-  replyMeta: {},
-  replyAuthor: { ...typography.label, color: colors.text },
-  replyTime: { ...typography.caption, color: colors.textSecondary },
-  replyText: { ...typography.body, color: colors.text, lineHeight: 22 },
-  replyConnect: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  replyConnectBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-  },
-  replyConnectText: { ...typography.caption, color: colors.text, fontWeight: '600' },
+  label: { ...typography.label, color: colors.black },
+});
 
-  // Reply form
-  replyForm: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadow.sm,
-    gap: spacing.xs,
+const rStyles = StyleSheet.create({
+  card: { marginBottom: spacing.md, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.grayBorder },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  avatar: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.black,
+    alignItems: 'center', justifyContent: 'center',
   },
-  replyFormTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.xs },
-  replyInput: {
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    ...typography.body,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginVertical: 3,
+  avatarText: { ...typography.label, color: colors.white },
+  author: { ...typography.label, color: colors.black },
+  time: { ...typography.caption, color: colors.gray },
+  text: { ...typography.body, color: colors.black },
+  connect: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  connectBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: spacing.sm, paddingVertical: 4,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.grayBorder,
   },
-  replyTextArea: { minHeight: 80, textAlignVertical: 'top', paddingTop: 10 },
-  replyFormHint: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  replyFormActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  connectText: { ...typography.caption, color: colors.black, fontWeight: '600' },
+});
+
+const rfStyles = StyleSheet.create({
+  form: { gap: spacing.sm },
+  input: {
+    borderWidth: 1, borderColor: colors.grayBorder, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: 10,
+    ...typography.body, color: colors.black,
+  },
+  textArea: { minHeight: 80, textAlignVertical: 'top', paddingTop: 10 },
+  actions: { flexDirection: 'row', gap: spacing.sm },
   cancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flex: 1, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center',
+    borderWidth: 1, borderColor: colors.grayBorder,
   },
-  cancelBtnText: { ...typography.button, color: colors.textSecondary },
+  cancelText: { ...typography.button, color: colors.gray },
   submitBtn: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    ...shadow.sm,
+    flex: 2, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center',
+    backgroundColor: colors.black,
   },
-  submitBtnDisabled: { opacity: 0.4 },
-  submitBtnText: { ...typography.button, color: '#FFF' },
+  disabled: { opacity: 0.35 },
+  submitText: { ...typography.button, color: colors.white },
 });

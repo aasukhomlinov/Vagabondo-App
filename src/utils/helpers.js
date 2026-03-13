@@ -17,6 +17,32 @@ export const formatTimeAgo = (isoString) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+// Format event dateTime for display: "March 14, 20:00"
+export const formatEventDate = (isoString) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const month = date.toLocaleDateString('en-US', { month: 'long' });
+  const day = date.getDate();
+  const hour = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${month} ${day}, ${hour}:${min}`;
+};
+
+// Parse dateTime into parts for the poster date widget
+export const parseDateParts = (isoString) => {
+  if (!isoString) return { day: '--', month: '--', hour: '--', min: '--' };
+  const date = new Date(isoString);
+  return {
+    day: String(date.getDate()).padStart(2, '0'),
+    month: String(date.getMonth() + 1).padStart(2, '0'),
+    hour: String(date.getHours()).padStart(2, '0'),
+    min: String(date.getMinutes()).padStart(2, '0'),
+  };
+};
+
+export const truncate = (str, maxLen = 100) =>
+  str && str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
+
 export const getDistanceKm = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -31,16 +57,7 @@ export const getDistanceKm = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-export const formatDistance = (km) => {
-  if (km < 1) return `${Math.round(km * 1000)}m away`;
-  if (km < 10) return `${km.toFixed(1)}km away`;
-  return `${Math.round(km)}km away`;
-};
-
-export const truncate = (str, maxLen = 100) =>
-  str && str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
-
-// Default location: Rome, Italy — fitting for Vagabondo!
+// Default location: Rome, Italy
 export const DEFAULT_LOCATION = {
   latitude: 41.9028,
   longitude: 12.4964,

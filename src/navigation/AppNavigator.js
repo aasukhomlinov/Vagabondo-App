@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import MapScreen from '../screens/MapScreen';
 import EventsListScreen from '../screens/EventsListScreen';
@@ -15,43 +16,14 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // ---------------------------------------------------------------------------
-// Tab bar icon components
+// Custom tab bar — matching the design exactly
 // ---------------------------------------------------------------------------
-function MapIcon({ focused }) {
-  return (
-    <View style={styles.iconWrap}>
-      <Text style={[styles.iconEmoji, focused && styles.iconFocused]}>🗺️</Text>
-      <Text style={[styles.iconLabel, focused && styles.labelFocused]}>Map</Text>
-    </View>
-  );
-}
-
-function ListIcon({ focused }) {
-  return (
-    <View style={styles.iconWrap}>
-      <Text style={[styles.iconEmoji, focused && styles.iconFocused]}>📋</Text>
-      <Text style={[styles.iconLabel, focused && styles.labelFocused]}>Events</Text>
-    </View>
-  );
-}
-
-// Custom center create button
-function CreateButton({ onPress }) {
-  return (
-    <TouchableOpacity onPress={onPress} style={styles.createBtn} activeOpacity={0.85}>
-      <Text style={styles.createBtnText}>+</Text>
-    </TouchableOpacity>
-  );
-}
-
-// Custom tab bar
 function CustomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -65,15 +37,28 @@ function CustomTabBar({ state, descriptors, navigation }) {
           }
         };
 
+        // Create button — large black circle, rightmost
         if (route.name === 'Create') {
           return (
-            <View key={route.key} style={styles.tabItem}>
-              <CreateButton onPress={onPress} />
-            </View>
+            <TouchableOpacity
+              key={route.key}
+              onPress={onPress}
+              style={styles.tabItem}
+              activeOpacity={0.8}
+            >
+              <View style={styles.createBtn}>
+                <Ionicons name="add" size={26} color={colors.white} />
+              </View>
+            </TouchableOpacity>
           );
         }
 
-        const Icon = options.tabBarIcon;
+        const iconName = {
+          Feed: isFocused ? 'compass' : 'compass-outline',
+          MapTab: isFocused ? 'map' : 'map-outline',
+          Profile: isFocused ? 'person' : 'person-outline',
+        }[route.name];
+
         return (
           <TouchableOpacity
             key={route.key}
@@ -81,7 +66,13 @@ function CustomTabBar({ state, descriptors, navigation }) {
             style={styles.tabItem}
             activeOpacity={0.7}
           >
-            {Icon && <Icon focused={isFocused} />}
+            <View style={[styles.iconWrap, isFocused && styles.iconWrapActive]}>
+              <Ionicons
+                name={iconName}
+                size={22}
+                color={isFocused ? colors.black : colors.grayMid}
+              />
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -90,7 +81,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
 }
 
 // ---------------------------------------------------------------------------
-// Main tabs
+// Main tabs — 4 tabs matching the design: Feed | Map | Profile | +
 // ---------------------------------------------------------------------------
 function MainTabs() {
   return (
@@ -98,27 +89,16 @@ function MainTabs() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen
-        name="Map"
-        component={MapScreen}
-        options={{ tabBarIcon: ({ focused }) => <MapIcon focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Create"
-        component={CreateEventScreen}
-        options={{ tabBarIcon: () => null }}
-      />
-      <Tab.Screen
-        name="Events"
-        component={EventsListScreen}
-        options={{ tabBarIcon: ({ focused }) => <ListIcon focused={focused} /> }}
-      />
+      <Tab.Screen name="Feed" component={EventsListScreen} />
+      <Tab.Screen name="MapTab" component={MapScreen} />
+      <Tab.Screen name="Profile" component={EventsListScreen} />
+      <Tab.Screen name="Create" component={CreateEventScreen} />
     </Tab.Navigator>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Root navigator (tabs + modal screens)
+// Root navigator
 // ---------------------------------------------------------------------------
 export default function AppNavigator() {
   return (
@@ -128,10 +108,7 @@ export default function AppNavigator() {
         <Stack.Screen
           name="EventDetail"
           component={EventDetailScreen}
-          options={{
-            presentation: 'card',
-            animation: 'slide_from_right',
-          }}
+          options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -141,52 +118,33 @@ export default function AppNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    ...shadow.sm,
+    borderTopColor: colors.grayBorder,
+    paddingTop: 8,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 8,
-    paddingBottom: 4,
   },
   iconWrap: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  iconEmoji: {
-    fontSize: 22,
-    opacity: 0.5,
-  },
-  iconFocused: {
-    opacity: 1,
-  },
-  iconLabel: {
-    fontSize: 11,
-    color: colors.textLight,
-    fontWeight: '500',
-  },
-  labelFocused: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  createBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
+    width: 44,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -20,
-    ...shadow.md,
   },
-  createBtnText: {
-    fontSize: 32,
-    color: '#FFFFFF',
-    lineHeight: 38,
-    fontWeight: '300',
+  iconWrapActive: {
+    backgroundColor: colors.tabActiveBg,
+  },
+  createBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.md,
   },
 });

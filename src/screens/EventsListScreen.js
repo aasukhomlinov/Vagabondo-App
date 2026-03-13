@@ -5,171 +5,95 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
-  ScrollView,
   RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 import { useEvents } from '../store/EventContext';
-import { colors, categories, spacing, radius, typography, shadow } from '../theme';
-import { formatTimeAgo, truncate } from '../utils/helpers';
-
-const ALL_FILTER = 'all';
+import { colors, categories, spacing, typography } from '../theme';
+import { formatEventDate } from '../utils/helpers';
+import AppHeader from '../components/AppHeader';
+import EventPosterCard, { AttendeeStack } from '../components/EventPosterCard';
 
 export default function EventsListScreen() {
-  const { events, toggleGoing, isGoing } = useEvents();
+  const { events, toggleLiked, isLiked } = useEvents();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState(ALL_FILTER);
-  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular'
+  const [category, setCategory] = useState('');
+  const [timeFilter, setTimeFilter] = useState('anytime');
   const [refreshing, setRefreshing] = useState(false);
 
-  const categoryList = [
-    { key: ALL_FILTER, label: 'All', emoji: '✨' },
-    ...Object.entries(categories).map(([key, val]) => ({
-      key,
-      label: val.label,
-      emoji: val.emoji,
-    })),
-  ];
+  const categoryLabel = category ? (categories[category]?.label || category) : '';
 
   const filtered = useMemo(() => {
     let list = [...events];
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          (e.description && e.description.toLowerCase().includes(q)) ||
-          (e.locationName && e.locationName.toLowerCase().includes(q))
-      );
-    }
-
-    if (activeCategory !== ALL_FILTER) {
-      list = list.filter((e) => e.category === activeCategory);
-    }
-
-    if (sortBy === 'newest') {
-      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    } else {
-      list.sort((a, b) => b.goingCount - a.goingCount);
-    }
-
+    if (category) list = list.filter((e) => e.category === category);
+    list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return list;
-  }, [events, search, activeCategory, sortBy]);
+  }, [events, category, timeFilter]);
+
+  const cycleCategory = useCallback(() => {
+    const keys = ['', ...Object.keys(categories)];
+    const idx = keys.indexOf(category);
+    setCategory(keys[(idx + 1) % keys.length]);
+  }, [category]);
+
+  const cycleTime = useCallback(() => {
+    const opts = ['anytime', 'today', 'this_week'];
+    const idx = opts.indexOf(timeFilter);
+    setTimeFilter(opts[(idx + 1) % opts.length]);
+  }, [timeFilter]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
+    setTimeout(() => setRefreshing(false), 500);
   }, []);
 
   const renderItem = useCallback(
     ({ item }) => (
-      <EventListCard
+      <EventCard
         event={item}
-        going={isGoing(item.id)}
-        onToggleGoing={() => toggleGoing(item.id)}
+        liked={isLiked(item.id)}
+        onLike={() => toggleLiked(item.id)}
         onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
       />
     ),
-    [isGoing, toggleGoing, navigation]
+    [isLiked, toggleLiked, navigation]
   );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Events</Text>
-        <View style={styles.sortRow}>
-          <TouchableOpacity
-            style={[styles.sortBtn, sortBy === 'newest' && styles.sortBtnActive]}
-            onPress={() => setSortBy('newest')}
-          >
-            <Text style={[styles.sortBtnText, sortBy === 'newest' && styles.sortBtnTextActive]}>
-              Newest
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.sortBtn, sortBy === 'popular' && styles.sortBtnActive]}
-            onPress={() => setSortBy('popular')}
-          >
-            <Text style={[styles.sortBtnText, sortBy === 'popular' && styles.sortBtnTextActive]}>
-              🔥 Popular
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppHeader
+        city="Rome"
+        category={categoryLabel}
+        timeFilter={timeFilter}
+        onCityPress={() => {}}
+        onCategoryPress={cycleCategory}
+        onTimePress={cycleTime}
+      />
 
-      {/* Search */}
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search events, places…"
-          placeholderTextColor={colors.textLight}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
-        />
-      </View>
-
-      {/* Category filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      >
-        {categoryList.map((cat) => (
-          <TouchableOpacity
-            key={cat.key}
-            style={[
-              styles.filterChip,
-              activeCategory === cat.key && styles.filterChipActive,
-            ]}
-            onPress={() =>
-              setActiveCategory(activeCategory === cat.key ? ALL_FILTER : cat.key)
-            }
-            activeOpacity={0.7}
-          >
-            <Text style={styles.filterEmoji}>{cat.emoji}</Text>
-            <Text
-              style={[
-                styles.filterLabel,
-                activeCategory === cat.key && styles.filterLabelActive,
-              ]}
-            >
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Events list */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
+            tintColor={colors.black}
           />
         }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🌍</Text>
             <Text style={styles.emptyTitle}>No events found</Text>
             <Text style={styles.emptySubtitle}>
-              {search ? 'Try a different search' : 'Be the first to create an event!'}
+              {category ? 'Try a different filter' : 'Tap + to create the first event!'}
             </Text>
           </View>
         }
@@ -179,57 +103,55 @@ export default function EventsListScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// Event card for the list
+// Event card — exactly matching the design layout
 // ---------------------------------------------------------------------------
-function EventListCard({ event, going, onToggleGoing, onPress }) {
-  const cat = categories[event.category] || categories.other;
+function EventCard({ event, liked, onLike, onPress }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      {/* Category stripe */}
-      <View style={[styles.cardStripe, { backgroundColor: cat.color }]} />
+    <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.card}>
+      {/* Full-width poster image */}
+      <EventPosterCard event={event} height={220} />
 
-      <View style={styles.cardBody}>
-        {/* Top row */}
-        <View style={styles.cardTop}>
-          <View style={[styles.catBadge, { backgroundColor: cat.bg }]}>
-            <Text style={styles.catEmoji}>{cat.emoji}</Text>
-            <Text style={[styles.catLabel, { color: cat.color }]}>{cat.label}</Text>
-          </View>
-          <Text style={styles.cardTime}>{formatTimeAgo(event.createdAt)}</Text>
+      {/* Info row below poster */}
+      <View style={styles.cardInfo}>
+        {/* Title row with arrow */}
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.black} />
         </View>
 
-        {/* Title */}
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {event.title}
-        </Text>
-
-        {/* Description */}
-        <Text style={styles.cardDesc} numberOfLines={2}>
-          {truncate(event.description, 120)}
-        </Text>
-
-        {/* Location */}
-        {event.locationName && (
-          <Text style={styles.cardLocation} numberOfLines={1}>
-            📍 {event.locationName}
+        {/* Meta: location · date */}
+        <View style={styles.metaRow}>
+          <Ionicons name="location-outline" size={12} color={colors.gray} />
+          <Text style={styles.metaText} numberOfLines={1}>
+            {event.venue}
           </Text>
-        )}
+          <Text style={styles.metaDot}>·</Text>
+          <Ionicons name="calendar-outline" size={12} color={colors.gray} />
+          <Text style={styles.metaText}>
+            {formatEventDate(event.dateTime)}
+          </Text>
+        </View>
 
-        {/* Footer */}
-        <View style={styles.cardFooter}>
-          <View style={styles.cardMeta}>
-            <Text style={styles.cardAuthor}>by {event.authorName}</Text>
-            <Text style={styles.cardSep}>·</Text>
-            <Text style={styles.cardReplies}>💬 {event.replies.length}</Text>
-          </View>
+        {/* Bottom row: attendees + like */}
+        <View style={styles.bottomRow}>
+          <AttendeeStack
+            colors={event.attendeeColors || []}
+            count={event.goingCount}
+            textColor={colors.black}
+          />
           <TouchableOpacity
-            style={[styles.goingBtn, going && styles.goingBtnActive]}
-            onPress={onToggleGoing}
-            activeOpacity={0.8}
+            style={styles.likeBtn}
+            onPress={onLike}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
           >
-            <Text style={styles.goingBtnEmoji}>{going ? '✅' : '🙋'}</Text>
-            <Text style={[styles.goingBtnText, going && styles.goingBtnTextActive]}>
-              {going ? "I'm going" : "I'm going"} · {event.goingCount}
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={18}
+              color={liked ? colors.liked : colors.black}
+            />
+            <Text style={[styles.likeText, liked && styles.likeTextActive]}>
+              {liked ? 'Liked' : 'Like'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -239,135 +161,79 @@ function EventListCard({ event, going, onToggleGoing, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...typography.h2, color: colors.text },
-  sortRow: { flexDirection: 'row', gap: spacing.xs },
-  sortBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-  },
-  sortBtnActive: { backgroundColor: colors.primaryBg },
-  sortBtnText: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
-  sortBtnTextActive: { color: colors.primary },
+  list: { paddingBottom: spacing.xxl },
 
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  separator: {
+    height: 1,
+    backgroundColor: colors.grayBorder,
     marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    ...shadow.sm,
   },
-  searchIcon: { fontSize: 16, marginRight: spacing.sm },
-  searchInput: {
-    flex: 1,
-    height: 44,
-    ...typography.body,
-    color: colors.text,
-  },
-
-  filters: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.xs,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: spacing.xs,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primaryBg,
-    borderColor: colors.primary,
-  },
-  filterEmoji: { fontSize: 14 },
-  filterLabel: { ...typography.label, color: colors.textSecondary },
-  filterLabelActive: { color: colors.primary },
-
-  list: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
 
   // Card
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    ...shadow.sm,
+  card: { backgroundColor: colors.white },
+
+  cardInfo: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    gap: 6,
   },
-  cardStripe: { width: 4 },
-  cardBody: { flex: 1, padding: spacing.md },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  catBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.full,
-  },
-  catEmoji: { fontSize: 12 },
-  catLabel: { ...typography.caption, fontWeight: '700' },
-  cardTime: { ...typography.caption, color: colors.textLight },
-  cardTitle: { ...typography.h3, color: colors.text, marginBottom: 4 },
-  cardDesc: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: 6 },
-  cardLocation: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-  cardFooter: {
+
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardAuthor: { ...typography.caption, color: colors.text, fontWeight: '600' },
-  cardSep: { color: colors.textLight },
-  cardReplies: { ...typography.caption, color: colors.textSecondary },
+  title: {
+    ...typography.h2,
+    color: colors.black,
+    flex: 1,
+    marginRight: spacing.xs,
+  },
 
-  goingBtn: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexWrap: 'wrap',
   },
-  goingBtnActive: {
-    backgroundColor: colors.goingBg,
-    borderColor: colors.going,
+  metaText: {
+    ...typography.bodySmall,
+    color: colors.gray,
   },
-  goingBtnEmoji: { fontSize: 13 },
-  goingBtnText: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
-  goingBtnTextActive: { color: colors.going },
+  metaDot: {
+    ...typography.bodySmall,
+    color: colors.grayMid,
+  },
 
-  empty: { alignItems: 'center', paddingTop: spacing.xxl },
-  emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
-  emptyTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.xs },
-  emptySubtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  likeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  likeText: {
+    ...typography.bodySmall,
+    color: colors.black,
+    fontWeight: '500',
+  },
+  likeTextActive: {
+    color: colors.liked,
+    fontWeight: '600',
+  },
+
+  empty: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl * 2,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyTitle: { ...typography.h3, color: colors.black, marginBottom: spacing.xs },
+  emptySubtitle: { ...typography.body, color: colors.gray, textAlign: 'center' },
 });
