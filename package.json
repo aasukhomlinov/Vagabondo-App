@@ -9,11 +9,13 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@fontsource/line-seed-jp": "^5.2.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "expo": "~52.0.0",
+    "expo-font": "^55.0.4",
     "expo-location": "~18.0.4",
     "expo-status-bar": "~2.0.0",
     "react": "18.3.1",

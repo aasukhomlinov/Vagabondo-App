@@ -56,18 +56,18 @@ export const radius = {
   full: 9999,
 };
 
-// Clean editorial typography
+// Clean editorial typography — LINE Seed JP
 export const typography = {
-  appName: { fontSize: 20, fontWeight: '800', fontStyle: 'italic', letterSpacing: -0.8 },
-  h1: { fontSize: 24, fontWeight: '700', lineHeight: 30, letterSpacing: -0.5 },
-  h2: { fontSize: 20, fontWeight: '700', lineHeight: 26, letterSpacing: -0.3 },
-  h3: { fontSize: 16, fontWeight: '600', lineHeight: 22 },
-  body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
-  bodySmall: { fontSize: 13, fontWeight: '400', lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '400', lineHeight: 16 },
-  label: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
-  chip: { fontSize: 13, fontWeight: '500' },
-  button: { fontSize: 15, fontWeight: '600' },
+  appName: { fontSize: 20, fontFamily: 'LINESeedJP-ExtraBold', fontStyle: 'italic', letterSpacing: -0.8 },
+  h1: { fontSize: 24, fontFamily: 'LINESeedJP-Bold', lineHeight: 30, letterSpacing: -0.5 },
+  h2: { fontSize: 20, fontFamily: 'LINESeedJP-Bold', lineHeight: 26, letterSpacing: -0.3 },
+  h3: { fontSize: 16, fontFamily: 'LINESeedJP-Bold', lineHeight: 22 },
+  body: { fontSize: 15, fontFamily: 'LINESeedJP-Regular', lineHeight: 22 },
+  bodySmall: { fontSize: 13, fontFamily: 'LINESeedJP-Regular', lineHeight: 18 },
+  caption: { fontSize: 12, fontFamily: 'LINESeedJP-Regular', lineHeight: 16 },
+  label: { fontSize: 12, fontFamily: 'LINESeedJP-Bold', letterSpacing: 0.1 },
+  chip: { fontSize: 13, fontFamily: 'LINESeedJP-Regular' },
+  button: { fontSize: 15, fontFamily: 'LINESeedJP-Bold' },
 };
 
 export const shadow = {

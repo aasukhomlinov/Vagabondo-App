@@ -109,14 +109,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: 'LINESeedJP-ExtraBold',
     letterSpacing: -0.8,
     lineHeight: 30,
     marginBottom: 4,
   },
   venue: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'LINESeedJP-Regular',
     letterSpacing: 0.2,
     marginBottom: spacing.sm,
   },
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   dateNum: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'LINESeedJP-Bold',
     letterSpacing: 0.5,
     width: 18,
     textAlign: 'center',
@@ -166,7 +166,7 @@ const avatarStyles = StyleSheet.create({
   },
   count: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'LINESeedJP-Regular',
     marginLeft: 6,
   },
 });
