@@ -36,6 +36,12 @@ src/
 - `/ralph` — Autonomous iterative loop for multi-step tasks
 - `/mobile-ux` — Mobile UX patterns and best practices
 - `/design-system` — Joint design system maintenance and consistency
+- `/excalidraw-diagram` — Generate Excalidraw wireframes, flowcharts, architecture diagrams
+- `/simplify` — Review changed code for quality, reuse, and efficiency; auto-fix issues
+
+## MCP Servers
+- **Context7** — Live, version-accurate docs for Expo, React Native, and any library (eliminates hallucinations). Append "use context7" to prompts for explicit lookup
+- **Figma** — Read Figma designs, export frames, push code-built UIs back to Figma as editable layers
 
 ## Commands
 ```bash
