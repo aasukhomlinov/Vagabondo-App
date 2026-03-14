@@ -153,7 +153,7 @@ export default function MapScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// Map pin — outline (unselected) or solid black (selected)
+// Map pin — drop pin style matching mockup
 // ---------------------------------------------------------------------------
 function EventPin({ event, selected, onPress }) {
   return (
@@ -161,8 +161,8 @@ function EventPin({ event, selected, onPress }) {
       <View style={styles.pinWrap}>
         <Ionicons
           name={selected ? 'location' : 'location-outline'}
-          size={selected ? 40 : 32}
-          color={selected ? colors.black : colors.black}
+          size={selected ? 42 : 30}
+          color={colors.black}
         />
       </View>
     </Marker>
@@ -170,7 +170,7 @@ function EventPin({ event, selected, onPress }) {
 }
 
 // ---------------------------------------------------------------------------
-// Bottom sheet content
+// Bottom sheet — poster with X/heart overlays + info row
 // ---------------------------------------------------------------------------
 function BottomSheet({ event, liked, onLike, onClose, onOpen }) {
   return (
@@ -179,17 +179,17 @@ function BottomSheet({ event, liked, onLike, onClose, onOpen }) {
       <View style={styles.posterWrap}>
         <EventPosterCard event={event} height={200} style={styles.posterRadius} />
 
-        {/* X button */}
+        {/* X button — circular, semi-transparent */}
         <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-          <Ionicons name="close" size={16} color={colors.black} />
+          <Ionicons name="close" size={18} color={colors.white} />
         </TouchableOpacity>
 
-        {/* Heart button */}
+        {/* Heart button — circular, semi-transparent */}
         <TouchableOpacity style={styles.heartBtn} onPress={onLike} activeOpacity={0.8}>
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={liked ? colors.liked : colors.black}
+            size={20}
+            color={liked ? colors.liked : colors.white}
           />
         </TouchableOpacity>
       </View>
@@ -212,7 +212,7 @@ function BottomSheet({ event, liked, onLike, onClose, onOpen }) {
             />
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.black} />
+        <Ionicons name="chevron-forward" size={20} color={colors.black} />
       </TouchableOpacity>
     </View>
   );
@@ -227,13 +227,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.white,
-    ...{
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 4,
-    },
   },
 
   locationBtn: {
@@ -269,13 +262,12 @@ const styles = StyleSheet.create({
   // Bottom sheet
   sheet: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: spacing.md,
+    right: spacing.md,
   },
   sheetInner: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderRadius: radius.xl,
     overflow: 'hidden',
     ...shadow.lg,
   },
@@ -292,10 +284,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     left: spacing.sm,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -303,10 +295,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -316,10 +308,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
   },
   infoLeft: { flex: 1, marginRight: spacing.sm },
-  infoTitle: { ...typography.h3, color: colors.black, marginBottom: 4 },
+  infoTitle: {
+    fontSize: 17,
+    fontFamily: 'LINESeedJP-Bold',
+    color: colors.black,
+    marginBottom: 4,
+  },
   infoMeta: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -88,7 +88,7 @@ export default function EventsListScreen() {
             tintColor={colors.black}
           />
         }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={Separator}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No events found</Text>
@@ -103,58 +103,71 @@ export default function EventsListScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// Event card — exactly matching the design layout
+// Centered short separator — matching mockup
+// ---------------------------------------------------------------------------
+function Separator() {
+  return (
+    <View style={styles.separatorWrap}>
+      <View style={styles.separatorLine} />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Event card — matches mockup layout exactly
 // ---------------------------------------------------------------------------
 function EventCard({ event, liked, onLike, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.card}>
-      {/* Full-width poster image */}
-      <EventPosterCard event={event} height={220} />
+      {/* Full-width poster */}
+      <EventPosterCard event={event} height={240} />
 
-      {/* Info row below poster */}
+      {/* Info below poster */}
       <View style={styles.cardInfo}>
         {/* Title row with arrow */}
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.black} />
+          <Ionicons name="chevron-forward" size={20} color={colors.black} />
         </View>
 
         {/* Meta: location · date */}
         <View style={styles.metaRow}>
-          <Ionicons name="location-outline" size={12} color={colors.gray} />
+          <Ionicons name="location-outline" size={13} color={colors.gray} />
           <Text style={styles.metaText} numberOfLines={1}>
             {event.venue}
           </Text>
           <Text style={styles.metaDot}>·</Text>
-          <Ionicons name="calendar-outline" size={12} color={colors.gray} />
+          <Ionicons name="calendar-outline" size={13} color={colors.gray} />
           <Text style={styles.metaText}>
             {formatEventDate(event.dateTime)}
           </Text>
         </View>
 
-        {/* Bottom row: attendees + like */}
-        <View style={styles.bottomRow}>
+        {/* Attendees row */}
+        <View style={styles.attendeeRow}>
           <AttendeeStack
             colors={event.attendeeColors || []}
             count={event.goingCount}
             textColor={colors.black}
           />
-          <TouchableOpacity
-            style={styles.likeBtn}
-            onPress={onLike}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={18}
-              color={liked ? colors.liked : colors.black}
-            />
-            <Text style={[styles.likeText, liked && styles.likeTextActive]}>
-              {liked ? 'Liked' : 'Like'}
-            </Text>
-          </TouchableOpacity>
         </View>
+
+        {/* Like row */}
+        <TouchableOpacity
+          style={styles.likeBtn}
+          onPress={onLike}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={18}
+            color={liked ? colors.liked : colors.black}
+          />
+          <Text style={[styles.likeText, liked && styles.likeTextActive]}>
+            {liked ? 'Liked' : 'Like'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -165,9 +178,16 @@ const styles = StyleSheet.create({
 
   list: { paddingBottom: spacing.xxl },
 
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#C8C8C8',
+  // Centered short separator line — matching mockup
+  separatorWrap: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  separatorLine: {
+    width: 60,
+    height: 2,
+    backgroundColor: colors.grayBorder,
+    borderRadius: 1,
   },
 
   // Card
@@ -175,18 +195,20 @@ const styles = StyleSheet.create({
 
   cardInfo: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: 10,
     paddingBottom: spacing.md,
-    gap: 6,
   },
 
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 4,
   },
   title: {
-    ...typography.h2,
+    fontSize: 22,
+    fontFamily: 'LINESeedJP-Bold',
+    letterSpacing: -0.3,
     color: colors.black,
     flex: 1,
     marginRight: spacing.xs,
@@ -196,7 +218,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    flexWrap: 'wrap',
+    marginBottom: 6,
   },
   metaText: {
     ...typography.bodySmall,
@@ -207,12 +229,10 @@ const styles = StyleSheet.create({
     color: colors.grayMid,
   },
 
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
+  attendeeRow: {
+    marginBottom: 4,
   },
+
   likeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,11 +241,9 @@ const styles = StyleSheet.create({
   likeText: {
     ...typography.bodySmall,
     color: colors.black,
-    fontWeight: '500',
   },
   likeTextActive: {
     color: colors.liked,
-    fontWeight: '600',
   },
 
   empty: {

@@ -16,7 +16,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // ---------------------------------------------------------------------------
-// Custom tab bar — matching the design exactly
+// Custom tab bar — matches mockup: pen | book | person | + (black circle)
 // ---------------------------------------------------------------------------
 function CustomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
@@ -47,15 +47,16 @@ function CustomTabBar({ state, descriptors, navigation }) {
               activeOpacity={0.8}
             >
               <View style={styles.createBtn}>
-                <Ionicons name="add" size={26} color={colors.white} />
+                <Ionicons name="add" size={28} color={colors.white} />
               </View>
             </TouchableOpacity>
           );
         }
 
+        // Mockup icons: pen/compose, open book/map, person
         const iconName = {
-          Feed: isFocused ? 'compass' : 'compass-outline',
-          MapTab: isFocused ? 'map' : 'map-outline',
+          Feed: isFocused ? 'create' : 'create-outline',
+          MapTab: isFocused ? 'book' : 'book-outline',
           Profile: isFocused ? 'person' : 'person-outline',
         }[route.name];
 
@@ -66,13 +67,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
             style={styles.tabItem}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconWrap, isFocused && styles.iconWrapActive]}>
-              <Ionicons
-                name={iconName}
-                size={22}
-                color={isFocused ? colors.black : colors.grayMid}
-              />
-            </View>
+            <Ionicons
+              name={iconName}
+              size={24}
+              color={isFocused ? colors.black : colors.grayMid}
+            />
           </TouchableOpacity>
         );
       })}
@@ -119,29 +118,19 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.grayBorder,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrap: {
-    width: 44,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: colors.tabActiveBg,
-  },
   createBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
