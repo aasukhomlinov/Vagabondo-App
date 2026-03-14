@@ -1,8 +1,8 @@
-# Vagabondo 🌍
+# Joint 🌍
 
 > *Connect with strangers, explore together.*
 
-Vagabondo is a social mobile app where people post spontaneous events and find others to join them. No profiles, no DMs — just events, a map, and social handles to connect.
+Joint is a social mobile app where people post spontaneous events and find others to join them. No profiles, no DMs — just events, a map, and social handles to connect.
 
 ---
 
