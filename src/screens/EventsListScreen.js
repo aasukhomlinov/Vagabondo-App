@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: colors.grayBorder,
-    marginHorizontal: spacing.md,
   },
 
   // Card
