@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
   list: { paddingBottom: spacing.xxl },
 
   separator: {
-    height: 1,
-    backgroundColor: colors.grayBorder,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#C8C8C8',
   },
 
   // Card
