@@ -63,10 +63,10 @@ export const typography = {
   h2: { fontSize: 20, fontFamily: 'LINESeedJP-Bold', lineHeight: 26, letterSpacing: -0.3 },
   h3: { fontSize: 16, fontFamily: 'LINESeedJP-Bold', lineHeight: 22 },
   body: { fontSize: 15, fontFamily: 'LINESeedJP-Regular', lineHeight: 22 },
-  bodySmall: { fontSize: 13, fontFamily: 'LINESeedJP-Regular', lineHeight: 18 },
+  bodySmall: { fontSize: 13, fontFamily: 'LINESeedJP-Regular', lineHeight: 20 },
   caption: { fontSize: 12, fontFamily: 'LINESeedJP-Regular', lineHeight: 16 },
   label: { fontSize: 12, fontFamily: 'LINESeedJP-Bold', letterSpacing: 0.1 },
-  chip: { fontSize: 13, fontFamily: 'LINESeedJP-Regular' },
+  chip: { fontSize: 13, fontFamily: 'LINESeedJP-Regular', lineHeight: 20 },
   button: { fontSize: 15, fontFamily: 'LINESeedJP-Bold' },
 };
 

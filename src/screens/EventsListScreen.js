@@ -122,11 +122,8 @@ function EventCard({ event, liked, onLike, onPress }) {
 
       {/* Info below poster */}
       <View style={styles.cardInfo}>
-        {/* Title row with arrow */}
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.black} />
-        </View>
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
 
         {/* Meta: location · date */}
         <View style={styles.metaRow}>
@@ -195,16 +192,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   title: {
-    ...typography.h1,
+    fontSize: 24,
+    fontFamily: 'LINESeedJP-Regular',
+    lineHeight: 32,
     color: colors.black,
-    flex: 1,
-    marginRight: spacing.xs,
   },
 
   metaRow: {

@@ -8,9 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import MapScreen from '../screens/MapScreen';
 import EventsListScreen from '../screens/EventsListScreen';
-import CreateEventScreen from '../screens/CreateEventScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
-import { colors, shadow } from '../theme';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -37,26 +36,9 @@ function CustomTabBar({ state, descriptors, navigation }) {
           }
         };
 
-        // Create button — large black circle, rightmost
-        if (route.name === 'Create') {
-          return (
-            <TouchableOpacity
-              key={route.key}
-              onPress={onPress}
-              style={styles.tabItem}
-              activeOpacity={0.8}
-            >
-              <View style={styles.createBtn}>
-                <Ionicons name="add" size={26} color={colors.white} />
-              </View>
-            </TouchableOpacity>
-          );
-        }
-
         const iconName = {
           Feed: isFocused ? 'pencil' : 'pencil-outline',
           MapTab: isFocused ? 'book' : 'book-outline',
-          Profile: isFocused ? 'person' : 'person-outline',
         }[route.name];
 
         return (
@@ -81,7 +63,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
 }
 
 // ---------------------------------------------------------------------------
-// Main tabs — 4 tabs matching the design: Feed | Map | Profile | +
+// Main tabs — Feed | Map (MVP)
 // ---------------------------------------------------------------------------
 function MainTabs() {
   return (
@@ -91,8 +73,6 @@ function MainTabs() {
     >
       <Tab.Screen name="Feed" component={EventsListScreen} />
       <Tab.Screen name="MapTab" component={MapScreen} />
-      <Tab.Screen name="Profile" component={EventsListScreen} />
-      <Tab.Screen name="Create" component={CreateEventScreen} />
     </Tab.Navigator>
   );
 }
@@ -137,14 +117,5 @@ const styles = StyleSheet.create({
   },
   iconWrapActive: {
     backgroundColor: colors.tabActiveBg,
-  },
-  createBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.md,
   },
 });
