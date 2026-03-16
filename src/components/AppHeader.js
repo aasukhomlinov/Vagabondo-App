@@ -1,20 +1,13 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, radius } from '../theme';
+import { colors, typography, spacing } from '../theme';
 
 /**
- * Shared top header — "joint" logo + scrollable filter chips.
- * Props:
- *   city        string   — displayed city name
- *   category    string   — active category filter label ('' = all)
- *   timeFilter  string   — 'anytime' | 'today' | 'this_week'
- *   onCityPress     fn
- *   onCategoryPress fn
- *   onTimePress     fn
+ * Shared top header — "joint" logo + scrollable filter chips (no borders).
  */
 export default function AppHeader({
-  city = 'Rome',
+  city = 'Belgrade',
   category = '',
   timeFilter = 'anytime',
   onCityPress,
@@ -32,7 +25,7 @@ export default function AppHeader({
       {/* Logo */}
       <Text style={styles.logo}>joint</Text>
 
-      {/* Filter chips */}
+      {/* Filter chips — borderless, just icon + text */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -40,19 +33,19 @@ export default function AppHeader({
       >
         {/* City */}
         <TouchableOpacity style={styles.chip} onPress={onCityPress} activeOpacity={0.7}>
-          <Ionicons name="location-outline" size={13} color={colors.black} />
+          <Ionicons name="location" size={14} color={colors.black} />
           <Text style={styles.chipText}>{city}</Text>
         </TouchableOpacity>
 
         {/* Category */}
         <TouchableOpacity style={styles.chip} onPress={onCategoryPress} activeOpacity={0.7}>
-          <Ionicons name="walk-outline" size={13} color={colors.black} />
-          <Text style={styles.chipText}>{category || 'All events'}</Text>
+          <Text style={styles.chipIcon}>✦</Text>
+          <Text style={styles.chipText}>{category || 'Concerts'}</Text>
         </TouchableOpacity>
 
         {/* Time */}
         <TouchableOpacity style={styles.chip} onPress={onTimePress} activeOpacity={0.7}>
-          <Ionicons name="calendar-outline" size={13} color={colors.black} />
+          <Ionicons name="calendar" size={14} color={colors.black} />
           <Text style={styles.chipText}>{timeLabel}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -67,9 +60,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.grayBorder,
-    gap: spacing.md,
+    gap: 6,
   },
   logo: {
     ...typography.appName,
@@ -78,7 +69,7 @@ const styles = StyleSheet.create({
   },
   chips: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 2,
     alignItems: 'center',
     paddingRight: spacing.md,
   },
@@ -86,12 +77,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.grayBorder,
-    backgroundColor: colors.white,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  chipIcon: {
+    fontSize: 13,
+    color: colors.black,
   },
   chipText: {
     ...typography.chip,

@@ -67,7 +67,7 @@ export default function EventsListScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AppHeader
-        city="Rome"
+        city="Belgrade"
         category={categoryLabel}
         timeFilter={timeFilter}
         onCityPress={() => {}}
@@ -88,7 +88,7 @@ export default function EventsListScreen() {
             tintColor={colors.black}
           />
         }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={CardSeparator}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No events found</Text>
@@ -102,31 +102,40 @@ export default function EventsListScreen() {
   );
 }
 
+// Centered short separator line between cards
+function CardSeparator() {
+  return (
+    <View style={styles.separatorWrap}>
+      <View style={styles.separator} />
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Event card — exactly matching the design layout
+// Event card — matching the reference design
 // ---------------------------------------------------------------------------
 function EventCard({ event, liked, onLike, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.card}>
       {/* Full-width poster image */}
-      <EventPosterCard event={event} height={220} />
+      <EventPosterCard event={event} height={260} />
 
-      {/* Info row below poster */}
+      {/* Info below poster */}
       <View style={styles.cardInfo}>
         {/* Title row with arrow */}
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.black} />
+          <Ionicons name="chevron-forward" size={20} color={colors.black} />
         </View>
 
         {/* Meta: location · date */}
         <View style={styles.metaRow}>
-          <Ionicons name="location-outline" size={12} color={colors.gray} />
+          <Ionicons name="location-outline" size={14} color={colors.gray} />
           <Text style={styles.metaText} numberOfLines={1}>
             {event.venue}
           </Text>
           <Text style={styles.metaDot}>·</Text>
-          <Ionicons name="calendar-outline" size={12} color={colors.gray} />
+          <Ionicons name="calendar-outline" size={14} color={colors.gray} />
           <Text style={styles.metaText}>
             {formatEventDate(event.dateTime)}
           </Text>
@@ -165,9 +174,15 @@ const styles = StyleSheet.create({
 
   list: { paddingBottom: spacing.xxl },
 
+  // Centered short separator
+  separatorWrap: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
   separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#C8C8C8',
+    width: 100,
+    height: 1,
+    backgroundColor: '#D0D0D0',
   },
 
   // Card
@@ -175,7 +190,7 @@ const styles = StyleSheet.create({
 
   cardInfo: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: 10,
     paddingBottom: spacing.md,
     gap: 6,
   },
@@ -186,7 +201,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.black,
     flex: 1,
     marginRight: spacing.xs,

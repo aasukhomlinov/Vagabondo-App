@@ -54,8 +54,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
         }
 
         const iconName = {
-          Feed: isFocused ? 'compass' : 'compass-outline',
-          MapTab: isFocused ? 'map' : 'map-outline',
+          Feed: isFocused ? 'pencil' : 'pencil-outline',
+          MapTab: isFocused ? 'book' : 'book-outline',
           Profile: isFocused ? 'person' : 'person-outline',
         }[route.name];
 

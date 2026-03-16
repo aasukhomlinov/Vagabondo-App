@@ -57,10 +57,10 @@ export const getDistanceKm = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-// Default location: Rome, Italy
+// Default location: Belgrade, Serbia
 export const DEFAULT_LOCATION = {
-  latitude: 41.9028,
-  longitude: 12.4964,
+  latitude: 44.8176,
+  longitude: 20.4633,
 };
 
 export const DEFAULT_DELTA = {

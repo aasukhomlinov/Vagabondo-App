@@ -1,16 +1,29 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { typography, spacing } from '../theme';
 import { parseDateParts } from '../utils/helpers';
 
 /**
- * Event poster card — colored background with title, venue, and date widget.
- * Matches the editorial poster aesthetic from the design.
+ * Event poster card — displays a poster image if available,
+ * falls back to colored background with text overlay.
  */
-export default function EventPosterCard({ event, height = 220, style }) {
-  const { day, month, hour, min } = parseDateParts(event.dateTime);
+export default function EventPosterCard({ event, height = 260, style }) {
+  const hasPosterImage = !!event.posterImage;
 
-  // Determine text color based on poster brightness
+  if (hasPosterImage) {
+    return (
+      <View style={[styles.posterContainer, { height }, style]}>
+        <Image
+          source={{ uri: event.posterImage }}
+          style={styles.posterImage}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
+
+  // Fallback: colored background with title overlay
+  const { day, month, hour, min } = parseDateParts(event.dateTime);
   const textColor = isLightColor(event.posterColor) ? '#000000' : '#FFFFFF';
   const subColor = isLightColor(event.posterColor)
     ? 'rgba(0,0,0,0.65)'
@@ -21,37 +34,23 @@ export default function EventPosterCard({ event, height = 220, style }) {
 
   return (
     <View style={[styles.poster, { backgroundColor: event.posterColor || '#1A1A2E', height }, style]}>
-      {/* Subtle noise overlay for texture */}
       <View style={styles.overlay} />
-
-      {/* Content */}
       <View style={styles.content}>
-        {/* Title */}
         <Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
           {event.title}
         </Text>
-
-        {/* Venue · City */}
         <Text style={[styles.venue, { color: subColor }]} numberOfLines={1}>
-          {event.city}{'  '}
-          {event.venue}
+          {event.city}{'  '}{event.venue}
         </Text>
-
-        {/* Date widget */}
         <View style={styles.dateWidget}>
-          {/* Top row: day | hour */}
           <View style={styles.dateRow}>
             <Text style={[styles.dateNum, { color: textColor }]}>{day}</Text>
             <View style={[styles.dateDividerV, { backgroundColor: dividerColor }]} />
             <Text style={[styles.dateNum, { color: textColor }]}>{hour}</Text>
           </View>
-
-          {/* Arrow between rows */}
           <View style={styles.dateArrow}>
             <Text style={[styles.dateArrowText, { color: subColor }]}>↕</Text>
           </View>
-
-          {/* Bottom row: month | minutes */}
           <View style={styles.dateRow}>
             <Text style={[styles.dateNum, { color: textColor }]}>{month}</Text>
             <View style={[styles.dateDividerV, { backgroundColor: dividerColor }]} />
@@ -63,7 +62,7 @@ export default function EventPosterCard({ event, height = 220, style }) {
   );
 }
 
-/** Stacked avatar circles, like in the design */
+/** Stacked avatar circles */
 export function AttendeeStack({ colors: avatarColors = [], count = 0, textColor = '#000' }) {
   const shown = avatarColors.slice(0, 3);
   return (
@@ -82,7 +81,6 @@ export function AttendeeStack({ colors: avatarColors = [], count = 0, textColor 
   );
 }
 
-// Rough luminance check
 function isLightColor(hex) {
   if (!hex || !hex.startsWith('#')) return false;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -92,6 +90,17 @@ function isLightColor(hex) {
 }
 
 const styles = StyleSheet.create({
+  // Image poster
+  posterContainer: {
+    width: '100%',
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Fallback colored poster
   poster: {
     width: '100%',
     position: 'relative',
@@ -100,7 +109,6 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    // Subtle bottom gradient feel using a semi-transparent overlay
     backgroundColor: 'rgba(0,0,0,0.08)',
   },
   content: {
@@ -120,7 +128,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     marginBottom: spacing.sm,
   },
-  // Date widget
   dateWidget: {
     flexDirection: 'row',
     alignItems: 'center',
